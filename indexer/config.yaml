@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=./node_modules/envio/svm.schema.json
+name: zarsc-indexer
+description: ZARsc (ZAR Supercoin), the Rand stablecoin on Solana. Transfers, mints, burns and holder balances from its Token-2022 mint.
+ecosystem: svm
+chains:
+  - id: solana
+    # HyperSync serves Solana from slot ~403,000,000 (27 Feb 2026) and stalls
+    # on anything earlier, so ZARsc history before that (it launched in
+    # Aug 2025) is out of reach. The first mint instruction is at 403,008,358.
+    start_slot: 403000000
+programs:
+  # ZARsc is not a program of its own. It is a mint of the SPL Token-2022
+  # program, so these are Token-2022 instructions, filtered to this one mint
+  # in the handlers (`where.accounts`). Token-2022 dispatches on a single
+  # leading byte.
+  - name: Token2022
+    program_id: TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb
+    instructions:
+      - name: transferChecked
+        discriminator: "0x0c"
+        accounts: [source, mint, destination, authority]
+        args:
+          - { name: amount, type: u64 }
+          - { name: decimals, type: u8 }
+      # The transfer-fee extension's own transfer (0x1a, sub-instruction 1).
+      # ZARsc's fee is 0 bps today, but the extension is enabled.
+      - name: transferCheckedWithFee
+        discriminator: "0x1a01"
+        accounts: [source, mint, destination, authority]
+        args:
+          - { name: amount, type: u64 }
+          - { name: decimals, type: u8 }
+          - { name: fee, type: u64 }
+      - name: mintToChecked
+        discriminator: "0x0e"
+        accounts: [mint, destination, authority]
+        args:
+          - { name: amount, type: u64 }
+          - { name: decimals, type: u8 }
+      - name: mintTo
+        discriminator: "0x07"
+        accounts: [mint, destination, authority]
+        args:
+          - { name: amount, type: u64 }
+      - name: burnChecked
+        discriminator: "0x0f"
+        accounts: [source, mint, authority]
+        args:
+          - { name: amount, type: u64 }
+          - { name: decimals, type: u8 }
+      - name: burn
+        discriminator: "0x08"
+        accounts: [source, mint, authority]
+        args:
+          - { name: amount, type: u64 }
+      # Opens a token account for `owner`: one per new ZARsc wallet.
+      - name: initializeAccount3
+        discriminator: "0x12"
+        accounts: [account, mint]
+        args:
+          - { name: owner, type: pubkey }

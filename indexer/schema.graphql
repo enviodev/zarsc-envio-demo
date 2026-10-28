@@ -1,0 +1,97 @@
+"Totals for the whole mint, a single row keyed by chain name, for dashboard KPIs. Token amounts are base units (6 decimals)."
+type GlobalStats {
+  id: ID!
+  "Wallets that have ever held ZARsc since the indexer's start slot."
+  wallets: Int!
+  "Wallets with a balance above zero right now."
+  holders: Int!
+  transfers: Int!
+  "Transfers that were not sent by the mint authority."
+  peerTransfers: Int!
+  "Transfers made inside another program's call, on a user's behalf."
+  programTransfers: Int!
+  transferVolume: BigInt!
+  mints: Int!
+  minted: BigInt!
+  burns: Int!
+  burned: BigInt!
+  feesPaid: BigInt!
+  lastActivityAt: Int!
+}
+
+"A wallet that holds or has held ZARsc. Balances come from the transaction's post-balances, so they stay right for wallets that held before the indexer's start slot."
+type Wallet {
+  id: ID!
+  "The wallet's most recent ZARsc token account."
+  tokenAccount: String!
+  balance: BigInt! @index
+  sent: BigInt!
+  received: BigInt!
+  sentCount: Int!
+  receivedCount: Int!
+  firstSeenAt: Int!
+  lastActiveAt: Int! @index
+  "True for the mint authority, which issues ZARsc."
+  isIssuer: Boolean!
+  outgoing: [Transfer!]! @derivedFrom(field: "from")
+  incoming: [Transfer!]! @derivedFrom(field: "to")
+}
+
+type Transfer {
+  id: ID!
+  from: Wallet!
+  to: Wallet!
+  amount: BigInt!
+  fee: BigInt!
+  timestamp: Int! @index
+  day: String! @index
+  slot: Int!
+  txSignature: String!
+  "Sent by the mint authority: an issuer payout, not a peer-to-peer payment."
+  fromIssuer: Boolean!
+  "Sent to the mint authority."
+  toIssuer: Boolean!
+  "Made inside another program's call, e.g. a swap or payment contract."
+  viaProgram: Boolean!
+}
+
+type Mint {
+  id: ID!
+  recipient: Wallet!
+  amount: BigInt!
+  authority: String!
+  timestamp: Int! @index
+  slot: Int!
+  txSignature: String!
+}
+
+type Burn {
+  id: ID!
+  owner: Wallet!
+  amount: BigInt!
+  timestamp: Int! @index
+  slot: Int!
+  txSignature: String!
+}
+
+"One row per UTC day, so the dashboard charts need no aggregate queries."
+type DailyStat {
+  id: ID!
+  day: String! @index
+  transfers: Int!
+  peerTransfers: Int!
+  volume: BigInt!
+  peerVolume: BigInt!
+  minted: BigInt!
+  burned: BigInt!
+  newWallets: Int!
+  activeWallets: Int!
+  "Holders after the day's last balance change."
+  holders: Int!
+}
+
+"Marks a wallet as active on a day, so activeWallets counts each one once."
+type DailyActive {
+  id: ID!
+  day: String! @index
+}

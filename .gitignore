@@ -1,0 +1,11 @@
+# The IslandDAO showcase this repo was modelled on: its own repo, kept alongside for reference.
+envio-islanddao-demo/
+
+node_modules
+.env
+.pnpm-store
+dist
+generated
+.envio
+*.log
+.DS_Store
